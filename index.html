@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Happy Birthday 🎂</title>
+  <meta name="description" content="An interactive birthday surprise." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <!-- Tailwind (CDN build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { display: ['Poppins', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            brand: {
+              50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185',
+              500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    :root { --bg: radial-gradient(1200px 600px at 10% -10%, #ffe4e6 0%, transparent 40%), radial-gradient(900px 500px at 110% 0%, #e0f2fe 0%, transparent 45%), #0f172a; }
+    body { background: var(--bg); }
+    /* Base animations */
+    .fade-in { animation: fadeIn 0.8s ease forwards; opacity: 0; transform: translateY(8px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+    .pop { animation: pop .5s ease; }
+    @keyframes pop { 0% { transform: scale(.9); } 70% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    .flame { transform-origin: 50% 100%; animation: flicker 0.9s infinite ease-in-out alternate; }
+    @keyframes flicker { from { transform: translateY(0) scale(1); } to { transform: translateY(-1px) scale(1.05); } }
+    .heart { position: absolute; color: #f43f5e; opacity: 0.25; animation: floatUp linear infinite; }
+    @keyframes floatUp { from { transform: translateY(100vh) scale(0.9) rotate(0deg); opacity: 0.2; } to { transform: translateY(-20vh) scale(1.2) rotate(15deg); opacity: 0.05; } }
+
+    /* NEW: transitions & micro-interactions */
+    .slide-in { animation: slideIn 520ms cubic-bezier(.2,.7,.2,1) both; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .shake { animation: shake .5s ease; }
+    @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+    .ripple { position: relative; overflow: hidden; }
+    .tilt { transition: transform .15s ease, box-shadow .2s ease; transform-style: preserve-3d; }
+    .tilt:hover { transform: translateY(-2px) rotateX(3deg) rotateY(-3deg); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .glow { box-shadow: 0 0 0 0 rgba(244,63,94,.6); animation: pulseGlow 1.8s infinite; }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(244,63,94,.6); } 70% { box-shadow: 0 0 0 12px rgba(244,63,94,0); } 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); } }
+
+    /* Balloons on candle blow */
+    .balloon { position: fixed; bottom: -10vh; width: 26px; height: 34px; border-radius: 50% 50% 50% 50%/60% 60% 40% 40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.6), rgba(255,255,255,.1) 30%, transparent 35%), var(--balloon);
+      animation: fly var(--dur) linear forwards; filter: drop-shadow(0 6px 10px rgba(0,0,0,.2)); }
+    .balloon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 26px; background: rgba(255,255,255,.6); transform: translateX(-50%); }
+    @keyframes fly { to { transform: translate(var(--x,0), -120vh); } }
+  </style>
+</head>
+<body class="min-h-screen text-slate-100 font-display selection:bg-brand-400 selection:text-white">
+  <!-- Floating hearts -->
+  <div id="hearts" aria-hidden="true"></div>
+
+  <main class="mx-auto max-w-3xl px-4 py-10">
+    <section class="text-center fade-in">
+      <h1 id="heroTitle" class="text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-sm">Happy Birthday, <span id="nameSpan" class="text-brand-300">My Love</span>! 🎉</h1>
+      <p id="typewriter" class="mt-3 text-slate-200/80 text-lg"></p>
+
+      <!-- Controls / Intro -->
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/10">
+          <label class="block text-sm text-slate-200">Change your name</label>
+          <input id="nameInput" class="mt-1 w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2 outline-none focus:ring-2 focus:ring-brand-400 placeholder:text-slate-300/50" placeholder="e.g. Anya" />
+          <button id="saveName" data-ripple class="ripple mt-2 w-full rounded-xl bg-brand-500 hover:bg-brand-600 transition py-2 font-semibold">Save</button>
+        </div>
+        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/10 text-left">
+          <div class="block text-sm text-slate-200 font-semibold">Our picture is preloaded</div>
+          <p class="text-sm text-slate-200/80 mt-1">Place a file named <code>our-photo.jpg</code> next to <code>index.html</code> in the repo. Or pass a link: <code>?photo=https://…/image.jpg</code></p>
+        </div>
+      </div>
+
+      <!-- Phases -->
+      <div id="phases" class="mt-10">
+        <!-- Progress dots -->
+        <div class="flex items-center justify-center gap-2" id="progress"></div>
+
+        <!-- Phase container -->
+        <div id="phaseContainer" class="mt-6"></div>
+
+        <!-- Nav -->
+        <div class="mt-6 flex items-center justify-between">
+          <button id="prevBtn" data-ripple class="ripple rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 px-4 py-2 disabled:opacity-40">← Back</button>
+          <button id="nextBtn" data-ripple class="ripple rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2 font-semibold glow">Next →</button>
+        </div>
+      </div>
+
+      <!-- Footer small print -->
+      <p class="mt-10 text-xs text-slate-300/70">Tip: Personalize the name and optional song (?song=...). The photo is built-in (<code>our-photo.jpg</code>) or pass <code>?photo=URL</code>. Everything runs in the browser only.</p>
+    </section>
+  </main>
+
+  <audio id="song" preload="auto"></audio>
+
+  <script>
+    // Personalization via query params (?name=...&song=...&photo=...)
+    const params = new URLSearchParams(location.search)
+    const initialName = params.get('name') || localStorage.getItem('bday_name') || 'My Love'
+    const songSrc = params.get('song') || '' // optional song URL
+    const photoSrc = params.get('photo') || 'our-photo.jpg' // static bundled photo
+
+    const nameSpan = document.getElementById('nameSpan')
+    const heroTitle = document.getElementById('heroTitle')
+    const nameInput = document.getElementById('nameInput')
+    const saveName = document.getElementById('saveName')
+
+    nameSpan.textContent = initialName
+    nameInput.value = initialName
+    saveName.addEventListener('click', () => {
+      const v = nameInput.value.trim() || 'My Love'
+      localStorage.setItem('bday_name', v)
+      nameSpan.textContent = v
+      toast(`Saved! Hi, ${v} ✨`)
+    })
+
+    // Hearts background
+    const hearts = document.getElementById('hearts')
+    ;(() => {
+      const count = 24
+      for (let i = 0; i < count; i++) {
+        const h = document.createElement('div')
+        h.className = 'heart'
+        h.style.left = Math.random()*100 + 'vw'
+        h.style.fontSize = (12 + Math.random()*28) + 'px'
+        h.style.animationDuration = (16 + Math.random()*12) + 's'
+        h.textContent = '❤'
+        hearts.appendChild(h)
+      }
+    })()
+
+    // Hero parallax
+    addEventListener('mousemove', (e)=>{
+      const { innerWidth:w, innerHeight:h } = window
+      const rx = (e.clientY - h/2)/h * 4
+      const ry = (e.clientX - w/2)/w * -4
+      heroTitle.style.transform = `translateZ(0) rotateX(${rx}deg) rotateY(${ry}deg)`
+    })
+
+    // Typewriter intro
+    const typewriter = document.getElementById('typewriter')
+    const introText = "A tiny website made with lots of love by your nerdy partner."
+    ;(async function typeIt() {
+      for (let i=1;i<=introText.length;i++) {
+        typewriter.textContent = introText.slice(0,i)
+        await new Promise(r=>setTimeout(r, 18))
+      }
+    })()
+
+    // Simple toast
+    function toast(msg) {
+      const t = document.createElement('div')
+      t.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 bg-white text-slate-900 rounded-xl px-4 py-2 shadow-lg pop'
+      t.textContent = msg
+      document.body.appendChild(t)
+      setTimeout(() => t.remove(), 2200)
+    }
+
+    // Confetti helper
+    function burst() { confetti({ particleCount: 140, spread: 70, origin: { y: 0.6 } }) }
+
+    // Phases content
+    const phases = [
+      {
+        title: 'Phase 1 — A little note',
+        render: () => `
+          <div class="bg-white/10 border border-white/10 rounded-2xl p-6 slide-in">
+            <h2 class="text-2xl font-bold">Hey ${escapeHtml(nameSpan.textContent)} 👋</h2>
+            <p class="mt-2 text-slate-100/90">On this special day, here’s a tiny corner of the internet that belongs to us. I’m so grateful for you — your smile, your patience, your memes, and the way you make everything brighter.</p>
+            <p class="mt-2">Ready to go on a tiny adventure?</p>
+          </div>`
+      },
+      {
+        title: 'Phase 2 — Highlights',
+        render: () => `
+          <div class="bg-white/10 border border-white/10 rounded-2xl p-6 grid md:grid-cols-3 gap-4 slide-in">
+            ${[
+              ['Our first chat', 'Who knew where this would go?'],
+              ['The goofy selfie', 'Instant classic. Unbeatable.'],
+              ['Your kindness', 'My forever soft spot.'],
+            ].map(([h, s]) => `
+              <div class='tilt rounded-xl bg-white/10 p-4 border border-white/10'>
+                <div class='text-brand-200 font-semibold'>${h}</div>
+                <div class='text-sm mt-1 text-slate-100/80'>${s}</div>
+              </div>`).join('')}
+          </div>`
+      },
+      {
+        title: 'Phase 3 — Tiny quiz',
+        render: () => `
+          <div class="bg-white/10 border border-white/10 rounded-2xl p-6 slide-in">
+            <p class="text-slate-100/90">What’s our ideal date night?</p>
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${['Movie + cuddles', 'Street food crawl', 'Board games', 'Long walk + tea'].map(opt => `
+                <button data-ripple class='ripple quizBtn rounded-xl border border-white/10 bg-white/10 hover:bg-white/15 px-4 py-3 text-left' onclick='selectAnswer(this)'>${opt}</button>
+              `).join('')}
+            </div>
+          </div>`
+      },
+      {
+        title: 'Final — Cake & Photo',
+        render: () => `
+          <div class="bg-white/10 border border-white/10 rounded-2xl p-6 slide-in">
+            <div class="flex flex-col md:flex-row gap-6 items-center justify-center">
+              <div class="w-[260px]">
+                ${cakeSVG()}
+              </div>
+              <div class="w-full md:w-[260px] aspect-[4/5] rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                <img id="photo" alt="Our photo" class="max-h-full max-w-full object-cover" />
+              </div>
+            </div>
+            <div class="text-center mt-6">
+              <h3 class="text-3xl font-extrabold">Happy Birthday, ${escapeHtml(nameSpan.textContent)}! 🎂</h3>
+              <p class="mt-2 text-slate-100/90">May your year be as sweet as this cake and as warm as your hugs. I love you. 💞</p>
+              <div class="mt-4 flex items-center justify-center gap-2">
+                <button id="blowBtn" data-ripple class="ripple rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2 font-semibold">Blow the candles</button>
+                <button id="musicBtn" data-ripple class="ripple rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 px-4 py-2">Play song ♪</button>
+              </div>
+            </div>
+          </div>`
+      }
+    ]
+
+    // Phase state & UI
+    let idx = 0
+    const progress = document.getElementById('progress')
+    const phaseContainer = document.getElementById('phaseContainer')
+    const prevBtn = document.getElementById('prevBtn')
+    const nextBtn = document.getElementById('nextBtn')
+
+    function renderProgress() {
+      progress.innerHTML = phases.map((_, i) => `
+        <span class="h-2 w-2 rounded-full ${i<=idx ? 'bg-brand-400' : 'bg-white/30'}"></span>
+      `).join('')
+    }
+
+    function renderPhase() {
+      phaseContainer.innerHTML = `
+        <div class="text-sm text-slate-200/70 mb-2">${phases[idx].title}</div>
+        ${phases[idx].render()}
+      `
+      phaseContainer.classList.remove('slide-in'); void phaseContainer.offsetWidth; phaseContainer.classList.add('slide-in')
+
+      // Final phase hooks
+      if (idx === phases.length - 1) {
+        document.getElementById('blowBtn').addEventListener('click', blowCandles)
+        document.getElementById('musicBtn').addEventListener('click', toggleSong)
+        const img = document.getElementById('photo')
+        if (img) img.src = photoSrc
+        burst()
+      }
+
+      prevBtn.disabled = idx === 0
+      nextBtn.textContent = idx === phases.length - 1 ? 'Restart ↺' : 'Next →'
+      renderProgress(); attachRipples(); attachQuiz();
+    }
+
+    prevBtn.addEventListener('click', () => { if (idx>0) { idx--; renderPhase() }})
+    nextBtn.addEventListener('click', () => {
+      if (idx < phases.length - 1) { idx++; renderPhase(); burst(); }
+      else { idx = 0; renderPhase() }
+    })
+
+    // Ripple effect
+    function attachRipples(){
+      document.querySelectorAll('[data-ripple]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const r = btn.getBoundingClientRect();
+          const d = Math.max(r.width, r.height);
+          const after = document.createElement('span');
+          after.style.position='absolute'; after.style.left=(e.clientX - r.left - d/2)+'px'; after.style.top=(e.clientY - r.top - d/2)+'px';
+          after.style.width=d+'px'; after.style.height=d+'px'; after.style.borderRadius='9999px';
+          after.style.background='rgba(255,255,255,.35)'; after.style.transform='scale(0)'; after.style.pointerEvents='none';
+          after.style.transition='transform .6s ease, opacity .6s ease'; after.style.opacity='0.5';
+          btn.appendChild(after); requestAnimationFrame(()=>{ after.style.transform='scale(1)'; after.style.opacity='0'; });
+          setTimeout(()=> after.remove(), 650)
+        }, { once: false })
+      })
+    }
+
+    // Quiz hover effects
+    function attachQuiz(){
+      document.querySelectorAll('.quizBtn').forEach(b=>{
+        b.addEventListener('mouseenter', ()=> b.classList.add('pop'))
+        b.addEventListener('animationend', ()=> b.classList.remove('pop'))
+      })
+    }
+
+    function selectAnswer(btn){
+      btn.classList.add('pop');
+      burst();
+      toast('Correct! Every night with you is ideal 💖')
+      document.querySelectorAll('.quizBtn').forEach(other=>{ if (other!==btn) { other.classList.add('shake'); setTimeout(()=> other.classList.remove('shake'), 500) } })
+    }
+
+    // Candles
+    function blowCandles() {
+      document.querySelectorAll('.flame').forEach(f => f.classList.add('opacity-0'))
+      for (let i=0;i<3;i++) burst();
+      toast('Make a wish! ✨')
+      for (let i=0;i<12;i++) setTimeout(createBalloon, i*200)
+    }
+
+    // Balloons
+    function createBalloon(){
+      const colors = ['#f43f5e','#a78bfa','#22c55e','#f59e0b','#38bdf8']
+      const b = document.createElement('div'); b.className='balloon';
+      b.style.setProperty('--balloon', colors[Math.floor(Math.random()*colors.length)])
+      b.style.left = Math.random()*100 + 'vw'; b.style.setProperty('--x', (Math.random()*80-40)+'px');
+      b.style.setProperty('--dur', (8 + Math.random()*6)+'s');
+      document.body.appendChild(b); setTimeout(()=> b.remove(), 14000)
+    }
+
+    // Music
+    const song = document.getElementById('song')
+    if (songSrc) song.src = songSrc
+    function toggleSong(){
+      if (!songSrc) { toast('Tip: Add ?song=your_song_url.mp3 to the link'); return }
+      if (song.paused) { song.play(); toast('Playing ♫') } else { song.pause(); toast('Paused ⏸') }
+    }
+
+    // Helpers
+    function escapeHtml(str) { return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[s])) }
+
+    function cakeSVG(){
+      return `
+      <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-xl">
+        <!-- Plate -->
+        <ellipse cx="100" cy="200" rx="70" ry="12" fill="#e2e8f0" />
+        <!-- Cake body -->
+        <rect x="45" y="120" width="110" height="60" rx="14" fill="#f1c0c0" stroke="#f8d7da" stroke-width="2"/>
+        <rect x="55" y="90" width="90" height="40" rx="12" fill="#ffe4e6" stroke="#ffd5dc" stroke-width="2"/>
+        <!-- Drips -->
+        <path d="M55 110 q8 12 0 24 M83 110 q10 12 0 24 M105 110 q8 12 0 24 M130 110 q8 12 0 24" stroke="#f9cbd3" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <!-- Candles -->
+        ${[70,100,130].map(x => `
+          <rect x="${x-3}" y="70" width="6" height="20" rx="2" fill="#a78bfa" />
+          <circle cx="${x}" cy="70" r="3" fill="#fde68a" class="flame" />
+        `).join('')}
+        <!-- Sprinkles -->
+        ${Array.from({length:16}).map(() => {
+          const x = 55 + Math.random()*90; const y = 130 + Math.random()*40
+          const colors = ['#f43f5e','#a78bfa','#22c55e','#f59e0b']
+          return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="${colors[Math.floor(Math.random()*colors.length)]}" />`
+        }).join('')}
+      </svg>`
+    }
+
+    // Initial render
+    renderPhase()
+  </script>
+</body>
+</html>
