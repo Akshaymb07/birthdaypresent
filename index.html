@@ -215,21 +215,33 @@
       </div>
 
       <!-- Footer small print -->
-      <p class="mt-10 text-xs text-slate-300/70">Built with love by Akshay for Lakshmy.</code>.</p>
+      <p class="mt-10 text-xs text-slate-300/70">Built with love by Akshay for Lakshmy.</p>
     </section>
   </main>
 
-  <audio id="song" preload="auto"></audio>
+  <!-- Background music: local file, hidden, autoplay + loop -->
+  <audio id="bgm" src="song.mp3" preload="auto" loop autoplay style="display:none"></audio>
 
   <script>
     // Fixed names
     const RECIPIENT = 'Lakshmy' // gf name
     const SENDER = 'Akshay'
+    const photoSrc = 'our-photo.jpg'
 
-    // Personalization via query params (?song=...&photo=...)
-    const params = new URLSearchParams(location.search)
-    const songSrc = params.get('song') || ''
-    const photoSrc = params.get('photo') || 'our-photo.jpg'
+    // Autoplay background music with tap-to-start fallback
+    document.addEventListener('DOMContentLoaded', () => {
+      const bgm = document.getElementById('bgm')
+      bgm.volume = 0.65
+      bgm.play().catch(() => {
+        const gate = document.createElement('div')
+        gate.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 text-white'
+        gate.innerHTML = '<div class="text-center text-lg font-semibold px-6 py-4 rounded-2xl">💖 Tap anywhere to start the music 💖</div>'
+        document.body.appendChild(gate)
+        const start = () => { bgm.play().finally(() => gate.remove()) }
+        document.addEventListener('click', start, { once: true })
+        document.addEventListener('touchstart', start, { once: true })
+      })
+    })
 
     // Hearts background
     const hearts = document.getElementById('hearts')
@@ -368,7 +380,7 @@
               <p class="mt-2 text-slate-100/90">From ${SENDER}, with all my love. Make a wish and blow the candles!</p>
               <div class="mt-4 flex items-center justify-center gap-2">
                 <button id="blowBtn" data-ripple class="ripple rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2 font-semibold">Blow the candles</button>
-                <button id="musicBtn" data-ripple class="ripple rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 px-4 py-2">Play song ♪</button>
+                <button id="musicBtn" data-ripple class="ripple rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 px-4 py-2">Mute / Unmute ♪</button>
               </div>
             </div>
           </div>`
@@ -398,11 +410,10 @@
       // Hook up interactions per phase
       nextBtn.disabled = !!phases[idx].lockNext
 
-      // Hook up interactions per phase
       if (idx === 0) initHeart()
       if (idx === 1) initHold()
-      if (idx === 2) initQuiz('.quiz')    // <-- quiz #1 buttons
-      if (idx === 3) initQuiz('.quiz2')   // <-- quiz #2 buttons
+      if (idx === 2) initQuiz('.quiz')    // quiz #1
+      if (idx === 3) initQuiz('.quiz2')   // quiz #2
       if (idx === 4) initSlider()
       if (idx === 5) initFinal()
 
@@ -431,7 +442,6 @@
           if (correct) {
             burst()
             toast("That's right!")
-            // 💬 Special popup for the 2nd question only
             if (selector === '.quiz') {
               showPopup("Haha do you think I only like your pink cheeks? 💕")
             }
@@ -448,7 +458,6 @@
         })
       })
     }
-
 
     // Phase 2: press & hold
     function initHold() {
@@ -476,7 +485,18 @@
     function initFinal() {
       const img = document.getElementById('photo'); if (img) img.src = photoSrc
       document.getElementById('blowBtn').addEventListener('click', blowCandles)
-      document.getElementById('musicBtn').addEventListener('click', toggleSong)
+
+      // Mute/Unmute background music
+      const musicBtn = document.getElementById('musicBtn')
+      const bgm = document.getElementById('bgm')
+      if (musicBtn && bgm) {
+        musicBtn.addEventListener('click', () => {
+          bgm.muted = !bgm.muted
+          musicBtn.textContent = bgm.muted ? 'Unmute ♪' : 'Mute ♪'
+          toast(bgm.muted ? 'Muted 🔇' : 'Unmuted 🔊')
+        })
+      }
+
       burst()
     }
 
@@ -515,13 +535,8 @@
       document.body.appendChild(b); setTimeout(() => b.remove(), 14000)
     }
 
-    // Music
-    const song = document.getElementById('song')
-    if (songSrc) song.src = songSrc
-    function toggleSong() {
-      if (!songSrc) { toast('Tip: Add ?song=your_song_url.mp3 to the link'); return }
-      if (song.paused) { song.play(); toast('Playing ♫') } else { song.pause(); toast('Paused ⏸') }
-    }
+    // Kick off
+    renderPhase()
 
     function cakeSVG() {
       return `
@@ -541,9 +556,6 @@
       }).join('')}
       </svg>`
     }
-
-    // Kick off
-    renderPhase()
   </script>
 </body>
 
