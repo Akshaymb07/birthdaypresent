@@ -331,7 +331,7 @@
         lockNext: true,
         render: () => `
     <div class="bg-white/10 border border-white/10 rounded-2xl p-8 slide-in">
-      <p class="text-lg">Which word does Akshay secretly like about you?</p>
+      <p class="text-lg">Which does Akshay secretly like about you?</p>
       <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <button class="quiz btn rounded-xl border border-white/10 bg-white/10 hover:bg-white/15 px-4 py-3" data-correct="false">Pink Cheeks</button>
         <button class="quiz btn rounded-xl border border-white/10 bg-white/10 hover:bg-white/15 px-4 py-3" data-correct="false">Sparkling eyes</button>
@@ -365,6 +365,7 @@
           </div>`
       },
       // Final: Cake & photo
+      // Final: Cake & photo
       {
         title: 'Cake & Photo',
         render: () => `
@@ -384,7 +385,25 @@
               </div>
             </div>
           </div>`
+      },
+      // NEW Final Phase — Postcard note
+      {
+        title: 'Postcard 💌',
+        render: () => `
+          <div class="bg-white/10 border border-white/10 rounded-2xl p-8 slide-in text-center max-w-2xl mx-auto">
+            <h3 class="text-4xl font-extrabold text-brand-400 mb-4">My Dear ${RECIPIENT} 💖</h3>
+            <p class="text-lg text-slate-100/90 leading-relaxed mb-6">
+              You make my days brighter, my world calmer, and my heart fuller. 
+              I love your laugh, your kindness, and that sparkle in your eyes when you talk about things you love. 
+              You’re the reason even ordinary days feel special.
+            </p>
+            <p class="italic text-slate-300/80">Happy Birthday, my favorite person. I’m so lucky to have you. 🌸</p>
+            <div class="mt-8">
+              <p class="text-sm text-slate-400">— Forever yours, ${SENDER}</p>
+            </div>
+          </div>`
       }
+
     ]
 
     // State & UI
